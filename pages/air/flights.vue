@@ -5,7 +5,10 @@
             <!-- 顶部过滤列表 -->
             <div class="flights-content">
                 <!-- 过滤条件 -->
-    
+                <FlightsFilters 
+                :data="cacheFlightsData" 
+                @setDataList="setDataList"/>
+                
                 <!-- 航班头部布局 -->
                 <FlightsListHead/>
                 
@@ -17,29 +20,27 @@
                     :key="index"
                     :data="item"/>
                     
-
-                    <el-row type="flex" justify="center" style="margin-top:10px;">
-                        <!-- size-change：切换条数时候触发 -->
-                        <!-- current-change：选择页数时候触发 -->
-                        <!-- current-page: 当前页数 -->
-                        <!-- page-size：当前条数 -->
-                        <!-- total：总条数 -->
-                        <el-pagination
-                        @size-change="handleSizeChange"
-                        @current-change="handleCurrentChange"
-                        :current-page="pageIndex"
-                        :page-sizes="[5, 10, 15, 20]"
-                        :page-size="pageSize"
-                        layout="total, sizes, prev, pager, next, jumper"
-                        :total="flightsData.total">
-                        </el-pagination>
-                    </el-row>
+                    <!-- 分页 -->
+                    <!-- size-change: 显示条数切换触发 -->
+                    <!-- current-change: 切换页数时候触发 -->
+                    <!-- current-page: 当前页数 -->
+                    <!-- total: 总条数 -->
+                    <el-pagination
+                    @size-change="handleSizeChange"
+                    @current-change="handleCurrentChange"
+                    :current-page="pageIndex"
+                    :page-sizes="[5, 10, 15, 20]"
+                    :page-size="pageSize"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    :total="total">
+                    </el-pagination>
                 </div>
             </div>
 
             <!-- 侧边栏 -->
             <div class="aside">
                 <!-- 侧边栏组件 -->
+                <FlightsAside/>
             </div>
         </el-row>
     </section>
@@ -49,7 +50,8 @@
 
 import FlightsListHead from "@/components/air/flightsListHead.vue"
 import FlightsItem from "@/components/air/flightsItem.vue"
-
+import FlightsFilters from "@/components/air/flightsFilters.vue"
+import FlightsAside from "@/components/air/flightsAside.vue"
 
 export default {
     data(){
@@ -59,44 +61,59 @@ export default {
                 info: {},
                 options: {}
             },
+
+            // 缓存对象，缓存对象一旦赋值之后不会被修改
+            cacheFlightsData: {
+                info: {},
+                options: {}
+            },
+
+            pageIndex: 1, // 默认的当前页
+            pageSize: 5, // 默认的条数
+            total:0, // 默认的总条数
+
             dataList: [], // 存当前页的数据
-            pageIndex:1,
-            pageSize:5,
-            total:0,
         }
     },
 
     components: {
         FlightsListHead,
         FlightsItem,
+        FlightsFilters,
+        FlightsAside
     },
-     methods:{
-    //   切换条数触发
-    handleSizeChange(value){
-        this.pageSize = value;
-        this.setDataList();
-    },
-    // 切换页数时候触发
-    handleCurrentChange(value){
-        this.pageIndex = value;
-        this.setDataList();
-    },
-    // 设置机票列表的数据
-    setDataList(arr){
-        if(arr){
-            this.flightsData.flights = arr;
 
-            // 初始化分页数据
-            this.pageIndex = 1;
-            this.total = arr.length;
+    methods: {
+        // 切换条数时候触发
+        handleSizeChange(value){
+            this.pageSize = value;
+            this.setDataList();
+        },
+
+        // 切换页数时候触发
+        handleCurrentChange(value){
+            this.pageIndex = value;
+            this.setDataList();
+        },
+
+        // 设置机票列表的数据
+        setDataList(arr){
+            
+            if(arr){
+               this.flightsData.flights = arr;
+
+               // 初始化分页数据
+               this.pageIndex = 1;
+               this.total = arr.length;
+            }
+
+            // 在总列表中截取出当前页的数据
+            this.dataList = this.flightsData.flights.slice( 
+                (this.pageIndex - 1) * this.pageSize,
+                this.pageIndex * this.pageSize
+            )
         }
-        // 在总列表中接去除当前页数据
-        this.dataList = this.flightsData.flights.slice(
-            (this.pageIndex -1) * this.pageSize,
-            this.pageIndex * this.pageSize
-        )
-    }
-     },
+    },
 
     mounted(){
         
@@ -114,6 +131,12 @@ export default {
 
             this.total = this.flightsData.total;
         })
+
+    },
+    watch:{
+        $route(){
+            this.getData()
+        }
     }
 }
 </script>
